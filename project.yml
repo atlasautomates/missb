@@ -4,7 +4,12 @@
 # Team id is not stored here — the generator writes Config/Signing.xcconfig
 # from .env's APPLE_TEAM_ID when that file exists, and leaves the team unset
 # otherwise so simulator builds still work.
+# AuditModel is the domain package. The watch target links it and does not
+# reimplement sheet rules.
 name: MissB
+packages:
+  AuditModel:
+    path: AuditModel
 options:
   bundleIdPrefix: com.atlasautomates
   deploymentTarget:
@@ -20,6 +25,9 @@ targets:
   MissB:
     type: application
     platform: watchOS
+    dependencies:
+      - package: AuditModel
+        product: AuditModel
     sources:
       - path: WatchApp
     configFiles:
