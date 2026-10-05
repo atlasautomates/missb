@@ -1,0 +1,8 @@
+[project]
+name = "missb-listener"
+version = "0.1.0"
+description = "Miss B webhook listener"
+requires-python = ">=3.11"
+dependencies = [
+    "modal>=1.6.1",
+]
