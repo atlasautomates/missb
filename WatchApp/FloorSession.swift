@@ -64,9 +64,21 @@ final class FloorSession {
         return true
     }
 
+    func answer(side: Side, room: String, check: Check, value: CheckValue) {
+        update(side) { $0.answer(room, check, value) }
+    }
+
+    func skip(side: Side, room: String, check: Check) {
+        update(side) { $0.skip(room, check) }
+    }
+
     func answerOcc(side: Side, room: String, occupied: Bool) {
+        answer(side: side, room: room, check: .occ, value: .bool(occupied))
+    }
+
+    private func update(_ side: Side, _ change: (inout AuditSheet) -> Void) {
         guard var sheet = sheets[side.rawValue] else { return }
-        sheet.answer(room, .occ, .bool(occupied))
+        change(&sheet)
         store(sheet)
     }
 

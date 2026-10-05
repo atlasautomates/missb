@@ -6,7 +6,7 @@ enum AppRoute: Hashable {
     case header(Side)
     case rooms(Side)
     case occ(Side, String)
-    case nextCheck(Side, String)
+    case checks(Side, String)
 }
 
 struct ContentView: View {
@@ -49,11 +49,11 @@ struct ContentView: View {
             OccCheckView(side: side, room: room) { occupied in
                 path.removeLast()
                 if occupied {
-                    path.append(.nextCheck(side, room))
+                    path.append(.checks(side, room))
                 }
             }
-        case .nextCheck(_, let room):
-            NextCheckView(room: room)
+        case .checks(let side, let room):
+            CheckFlowView(side: side, room: room)
         }
     }
 }
