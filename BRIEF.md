@@ -108,6 +108,20 @@ computer. A floor manager asked "is there any way to automate this?" Two routes:
   device on his Apple Developer account when we reach provisioning (use the
   `wizard` skill then).
 
+## Feedback pass 1 (2026-10-05, Adrian testing the 005 skeleton)
+
+- Selecting a profile auto-fills the ANM field. Add an **"Other" profile**:
+  tapping it opens the watch keyboard for a free-typed name, which fills the
+  ANM line (the one sanctioned typing exception on the watch).
+- Room-list header bar: compact, between the back button and the top-right
+  time/side — profile icon + a **census countdown**: starts at the stated
+  starting census and counts down as (occupied) rooms are completed; on
+  reaching zero it gets a celebratory glow. No date in the bar.
+- Confirmed correct in testing: auto date stamp, side selection, overall flow.
+- Workflow confirmed as designed: depth-first per room (all checks of one
+  room, then the next room), never breadth-first across rooms. Refinement:
+  after a room completes, snap the list to the next incomplete room.
+
 ## Decisions (grill round 3, 2026-10-05)
 
 - **Timeline: one week to demo day.** Watch app is the sole focus; the phone
