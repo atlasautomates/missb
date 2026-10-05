@@ -19,6 +19,10 @@ already-completed room, free editing everywhere else, start-over flow.
 - [ ] Completing the final room with gaps elsewhere lists the incomplete rooms
 - [ ] Editing a completed room asks to confirm; editing an incomplete room
       never does
+- [ ] After revising one check in a completed room, the flow returns straight
+      to the room list instead of walking the remaining answered checks
+      (lead ruling on 007 question 1; today the flow keeps walking because
+      that was the only way to reach later stored values)
 - [ ] Start-over wipes the sheet after an explicit confirm
 
 ## Blocked by
