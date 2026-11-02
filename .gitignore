@@ -20,6 +20,9 @@ build/
 # Generated signing config (may contain APPLE_TEAM_ID)
 Config/Signing.xcconfig
 
+# Generated listener URL and bearer token. Never commit.
+WatchApp/ListenerConfig.swift
+
 # Swift Package Manager
 .build/
 .swiftpm/

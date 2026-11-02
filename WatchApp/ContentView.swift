@@ -12,6 +12,10 @@ enum AppRoute: Hashable {
 struct ContentView: View {
     @Environment(FloorSession.self) private var session
     @State private var path: [AppRoute] = []
+    /// Room whose flow just popped back to the room list. The list consumes
+    /// it to snap onto the next incomplete room; onAppear is not a reliable
+    /// pop signal on watchOS, so the path owner reports the pop itself.
+    @State private var closedRoom: String?
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -21,6 +25,17 @@ struct ContentView: View {
             }
             .navigationDestination(for: AppRoute.self) { route in
                 destination(route)
+            }
+        }
+        .onChange(of: path) { old, new in
+            guard old.count > new.count,
+                  case .rooms = new.last,
+                  let popped = old.last else { return }
+            switch popped {
+            case .occ(_, let room), .checks(_, let room):
+                closedRoom = room
+            default:
+                break
             }
         }
     }
@@ -42,7 +57,7 @@ struct ContentView: View {
                 path.append(.rooms(side))
             }
         case .rooms(let side):
-            RoomListView(side: side) { room in
+            RoomListView(side: side, closedRoom: $closedRoom) { room in
                 path.append(.occ(side, room))
             }
         case .occ(let side, let room):

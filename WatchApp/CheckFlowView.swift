@@ -3,6 +3,7 @@ import AuditModel
 
 struct CheckFlowView: View {
     @Environment(FloorSession.self) private var session
+    @Environment(GlanceFocus.self) private var glance
     @Environment(\.dismiss) private var dismiss
 
     let side: Side
@@ -23,6 +24,8 @@ struct CheckFlowView: View {
                 .id(check)
         }
         .onAppear {
+            glance.side = side
+            glance.room = room
             if current == nil {
                 current = check
             }
@@ -48,7 +51,7 @@ struct CheckFlowView: View {
         case .iso:
             ChoiceCheckView(options: PlaceholderOptionLists.iso, selected: choice(state), onSelect: commitChoice)
         case .cdiff:
-            ChoiceCheckView(options: ["+", "R-O"], selected: choice(state), onSelect: commitChoice)
+            ChoiceCheckView(options: ["+", "R/O", "IND"], selected: choice(state), onSelect: commitChoice)
         case .braden:
             ScoreCheckView(range: 6...23, stored: score(state), picking: $picking, onCommit: commitScore)
         case .schmid:

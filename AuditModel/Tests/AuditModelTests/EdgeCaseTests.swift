@@ -275,6 +275,53 @@ private func freshSheet(_ side: Side = .west) -> AuditSheet {
     }
 }
 
+@Suite struct RemainingUnoccupied {
+    @Test func onlyRoomsStillAwaitingOccupancyAreEmptied() {
+        var sheet = freshSheet()
+        sheet.answer("301", .occ, .bool(true))
+        sheet.answer("301", .braden, .score(18))
+        sheet.answer("302", .occ, .bool(false))
+
+        #expect(sheet.roomsAwaitingOccupancy.count == 24)
+        sheet.markRemainingUnoccupied()
+
+        #expect(sheet.state(of: .occ, in: "301") == .answered(.bool(true)))
+        #expect(sheet.state(of: .braden, in: "301") == .answered(.score(18)))
+        #expect(sheet.state(of: .occ, in: "302") == .answered(.bool(false)))
+        #expect(sheet.isRoomComplete("303"))
+        #expect(sheet.state(of: .braden, in: "303") == .skipped(.emptyRoom))
+        #expect(sheet.roomsAwaitingOccupancy.isEmpty)
+        #expect(sheet.occupiedCount == 1)
+
+        sheet.markRemainingUnoccupied()
+        #expect(sheet.state(of: .braden, in: "301") == .answered(.score(18)))
+    }
+}
+
+@Suite struct ClearCharting {
+    @Test func clearingDropsEveryRoomAndKeepsTheHeader() {
+        var sheet = freshSheet()
+        sheet.anmRHC = "SB"
+        sheet.startingCensus = 12
+        sheet.answer("301", .occ, .bool(true))
+        sheet.answer("301", .braden, .score(18))
+        sheet.answer("302", .occ, .bool(false))
+
+        #expect(sheet.hasCharting)
+        sheet.clearCharting()
+
+        #expect(!sheet.hasCharting)
+        #expect(sheet.state(of: .occ, in: "301") == .missing)
+        #expect(sheet.state(of: .braden, in: "301") == .missing)
+        #expect(sheet.state(of: .braden, in: "302") == .missing)
+        #expect(!sheet.isRoomComplete("302"))
+        #expect(sheet.anmRHC == "SB")
+        #expect(sheet.startingCensus == 12)
+        #expect(sheet.occupiedCount == 0)
+        #expect(sheet.censusCountdown == 12)
+    }
+}
+
 @Suite struct PlaceholderLists {
     @Test func isoAndRestraintsMatchTheBriefPlaceholders() {
         #expect(PlaceholderOptionLists.iso == ["contact", "droplet", "airborne", "enteric"])

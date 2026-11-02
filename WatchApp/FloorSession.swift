@@ -1,4 +1,5 @@
 import Foundation
+import WidgetKit
 import AuditModel
 
 /// One launch's nurse plus the two side sheets for the shift that contained
@@ -6,7 +7,7 @@ import AuditModel
 @MainActor
 @Observable
 final class FloorSession {
-    let shift: ShiftInstance
+    private(set) var shift: ShiftInstance
     private(set) var nurse: NurseProfile?
     private(set) var sheets: [String: AuditSheet] = [:]
     private let directory: URL
@@ -28,6 +29,7 @@ final class FloorSession {
             )) ?? FileManager.default.temporaryDirectory
         }
         restore()
+        publishComplication()
     }
 
     func select(nurse: NurseProfile) {
@@ -76,6 +78,34 @@ final class FloorSession {
         answer(side: side, room: room, check: .occ, value: .bool(occupied))
     }
 
+    func markRemainingUnoccupied(side: Side) {
+        update(side) { $0.markRemainingUnoccupied() }
+    }
+
+    func clearCharting(side: Side) {
+        update(side) { $0.clearCharting() }
+    }
+
+    /// Stated census, after the header is in. Room charting stays.
+    @discardableResult
+    func updateCensus(side: Side, census: Int) -> Bool {
+        guard (0...26).contains(census), sheets[side.rawValue] != nil else { return false }
+        update(side) { $0.startingCensus = census }
+        return true
+    }
+
+    /// Drop West and East for this launch and read the shift from the clock again.
+    /// A reset during the same window starts that window over. Crossing a
+    /// boundary first means the label becomes the new window, still empty.
+    func resetShift(now: Date = Date()) {
+        shift = ShiftSchedule.default.instance(containing: now, calendar: .current)
+        sheets.removeAll()
+        for side in [Side.west, Side.east] {
+            try? FileManager.default.removeItem(at: fileURL(side))
+        }
+        publishComplication()
+    }
+
     private func update(_ side: Side, _ change: (inout AuditSheet) -> Void) {
         guard var sheet = sheets[side.rawValue] else { return }
         change(&sheet)
@@ -85,6 +115,27 @@ final class FloorSession {
     private func store(_ sheet: AuditSheet) {
         sheets[sheet.side.rawValue] = sheet
         persist(sheet)
+        publishComplication()
+    }
+
+    /// The watch face reads this from the shared app group. Charting stays
+    /// in the app's documents; the face only gets the countdown.
+    private func publishComplication() {
+        ComplicationStore.write(ComplicationSnapshot(
+            shiftLabel: shift.label,
+            shiftDate: shift.date,
+            west: glance(.west),
+            east: glance(.east)
+        ))
+        WidgetCenter.shared.reloadTimelines(ofKind: ComplicationStore.kind)
+    }
+
+    private func glance(_ side: Side) -> ComplicationSnapshot.SideGlance? {
+        guard let sheet = sheet(for: side) else { return nil }
+        return ComplicationSnapshot.SideGlance(
+            remaining: sheet.censusCountdown,
+            incomplete: sheet.incompleteRooms.count
+        )
     }
 
     private func persist(_ sheet: AuditSheet) {

@@ -70,6 +70,32 @@ public struct AuditSheet: Equatable, Codable, Sendable {
         write(room, check, .skipped(.manual))
     }
 
+    /// Rooms whose occupancy has not been answered. Already occupied rooms
+    /// stay, even if the rest of the chart is unfinished.
+    public var roomsAwaitingOccupancy: [String] {
+        side.rooms.filter { state(of: .occ, in: $0) == .missing }
+    }
+
+    /// OCC = no for every room still awaiting occupancy. Each becomes a
+    /// finished empty room. Charted rooms are left alone.
+    public mutating func markRemainingUnoccupied() {
+        for room in roomsAwaitingOccupancy {
+            answer(room, .occ, .bool(false))
+        }
+    }
+
+    /// Any room on this side has an answer or a skip. The header is not charting.
+    public var hasCharting: Bool {
+        side.rooms.contains { room in
+            Check.allCases.contains { state(of: $0, in: room) != .missing }
+        }
+    }
+
+    /// Drop every room back to missing. Nurse, shift, ANM/RHC, and census stay.
+    public mutating func clearCharting() {
+        answers = [:]
+    }
+
     public func isRoomComplete(_ room: String) -> Bool {
         guard side.rooms.contains(room) else { return false }
         return Check.allCases.allSatisfy { state(of: $0, in: room) != .missing }
@@ -93,6 +119,32 @@ public struct AuditSheet: Equatable, Codable, Sendable {
     public var hasCensusDiscrepancy: Bool {
         guard let startingCensus else { return false }
         return startingCensus != occupiedCount
+    }
+
+    /// Occupied rooms that are fully charted. Empty rooms complete in one tap
+    /// but are not counted: the census countdown tracks patients seen, not
+    /// doors opened.
+    public var completedOccupiedCount: Int {
+        side.rooms.filter {
+            state(of: .occ, in: $0) == .answered(.bool(true)) && isRoomComplete($0)
+        }.count
+    }
+
+    /// Stated census minus `completedOccupiedCount`. Signed on purpose: when
+    /// more occupied rooms complete than the stated census (census overshoot)
+    /// this goes negative instead of clamping, so the mismatch stays visible
+    /// until the discrepancy popup resolves it. Nil while no census is stated.
+    public var censusCountdown: Int? {
+        startingCensus.map { $0 - completedOccupiedCount }
+    }
+
+    /// First incomplete room after `room` in side order, wrapping past the
+    /// end back to the top. `room` itself is excluded. Nil when every other
+    /// room is complete or `room` is not on this side.
+    public func nextIncompleteRoom(after room: String) -> String? {
+        guard let idx = side.rooms.firstIndex(of: room) else { return nil }
+        let wrapped = side.rooms[side.rooms.index(after: idx)...] + side.rooms[..<idx]
+        return wrapped.first { !isRoomComplete($0) }
     }
 
     public func belongsTo(shift: ShiftInstance) -> Bool {

@@ -6,6 +6,8 @@
 # otherwise so simulator builds still work.
 # AuditModel is the domain package. The watch target links it and does not
 # reimplement sheet rules.
+# MissBWidget is the watch-face complication. It shares an app group with
+# the watch app so the face can read the census countdown.
 name: MissB
 packages:
   AuditModel:
@@ -28,8 +30,15 @@ targets:
     dependencies:
       - package: AuditModel
         product: AuditModel
+      - target: MissBWidget
+        embed: true
     sources:
       - path: WatchApp
+        excludes:
+          - Background.plist
+      - path: Shared
+    entitlements:
+      path: WatchApp/MissB.entitlements
     configFiles:
       Debug: Config/Signing.xcconfig
       Release: Config/Signing.xcconfig
@@ -37,6 +46,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.atlasautomates.missb
         PRODUCT_NAME: MissB
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: "Miss B"
         INFOPLIST_KEY_WKApplication: YES
@@ -44,4 +54,33 @@ targets:
         TARGETED_DEVICE_FAMILY: "4"
         CODE_SIGN_STYLE: Automatic
         ENABLE_PREVIEWS: YES
+        INFOPLIST_FILE: WatchApp/Background.plist
     scheme: {}
+  MissBWidget:
+    type: app-extension
+    platform: watchOS
+    dependencies:
+      - package: AuditModel
+        product: AuditModel
+    sources:
+      - path: Complication
+        excludes:
+          - Info.plist
+          - MissBWidget.entitlements
+      - path: Shared
+    entitlements:
+      path: Complication/MissBWidget.entitlements
+    configFiles:
+      Debug: Config/Signing.xcconfig
+      Release: Config/Signing.xcconfig
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.atlasautomates.missb.widget
+        PRODUCT_NAME: MissBWidget
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: Complication/Info.plist
+        INFOPLIST_KEY_CFBundleDisplayName: "Miss B"
+        TARGETED_DEVICE_FAMILY: "4"
+        CODE_SIGN_STYLE: Automatic
+        SKIP_INSTALL: YES
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"
